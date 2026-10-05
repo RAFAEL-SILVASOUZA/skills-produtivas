@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<!--
+  Template de documentação de arquitetura navegável.
+  ==================================================
+  TROQUE: <title>, a marca na topbar, os números em .stats, as sub-abas,
+          as linhas .dg-note e o conteúdo das abas de texto.
+  NÃO MEXA em: css/styles.css e js/main.js (comportamento já testado).
+  O conteúdo dos diagramas vive inteiramente em js/data.js.
+-->
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Documentação de Arquitetura — PROJETO</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo"><i class="fa-solid fa-diagram-project"></i></div>
+      <div>
+        PROJETO
+        <small>Documentação de Arquitetura</small>
+      </div>
+    </div>
+
+    <!-- números que importam no projeto; 3 a 5 itens -->
+    <ul class="stats">
+      <li><b>0</b> módulos</li>
+      <li><b>0</b> serviços</li>
+      <li><b>0</b> tabelas</li>
+    </ul>
+
+    <div class="spacer"></div>
+    <button id="themeToggle" class="theme-toggle" type="button">
+      <i class="fa-solid fa-moon"></i>
+      <span>Tema escuro</span>
+    </button>
+  </header>
+
+  <nav class="tabbar">
+    <div class="tabs">
+      <button class="tab active" data-tab="panel-diagramas">
+        <i class="fa-solid fa-sitemap"></i> Diagramas
+      </button>
+      <button class="tab" data-tab="panel-documentacao">
+        <i class="fa-solid fa-book"></i> Documentação
+      </button>
+    </div>
+
+    <span class="tabbar-sep"></span>
+
+    <!-- uma sub-aba por diagrama; data-subtab = id do .subpanel.
+         Duplique o botão para cada diagrama que você criar. -->
+    <div class="subtabs" data-panel="panel-diagramas">
+      <button class="subtab active" data-subtab="sub-visao"><i class="fa-solid fa-globe"></i> Visão geral</button>
+    </div>
+
+    <div class="subtabs" data-panel="panel-documentacao" hidden>
+      <button class="subtab active" data-subtab="doc-modulos"><i class="fa-solid fa-cubes"></i> Módulos</button>
+      <button class="subtab" data-subtab="doc-riscos"><i class="fa-solid fa-triangle-exclamation"></i> Riscos</button>
+    </div>
+  </nav>
+
+  <div class="app">
+    <main class="wrap">
+
+      <!-- ========== DIAGRAMAS ==========
+           Cada .subpanel = uma linha .dg-note + um .diagram vazio.
+           O id do .diagram tem que bater com a chave em DIAGRAMS (data.js). -->
+      <section id="panel-diagramas" class="tab-panel active">
+
+        <div id="sub-visao" class="subpanel active">
+          <p class="dg-note">
+            <i class="fa-solid fa-globe"></i>
+            <strong>Visão geral.</strong> Uma ou duas frases dizendo o que o leitor
+            deve concluir olhando este desenho — não repita os rótulos dos cards.
+          </p>
+          <div class="diagram" id="dg-visao"></div>
+        </div>
+
+        <!-- Duplique o bloco acima para cada diagrama. Para cada um são
+             quatro peças, todas com o mesmo sufixo:
+               1. o botão .subtab apontando para o painel (atributo data-subtab)
+               2. o div.subpanel com esse id, sem a classe active
+               3. o div.diagram dentro dele, com id iniciando em dg-
+               4. a chave correspondente em DIAGRAMS, no data.js
+             O check.js acusa se alguma das quatro faltar. -->
+      </section>
+
+      <!-- ========== DOCUMENTAÇÃO (texto) ========== -->
+      <section id="panel-documentacao" class="tab-panel">
+
+        <div id="doc-modulos" class="subpanel active">
+          <div class="card">
+            <h2><i class="fa-solid fa-circle-info"></i> O que é o PROJETO</h2>
+            <p>Resumo em 3 a 4 linhas: o que faz, com que stack, e como as partes conversam.</p>
+          </div>
+
+          <div class="card">
+            <h2><i class="fa-solid fa-cubes"></i> Módulos do repositório</h2>
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Módulo</th><th>Tecnologia</th><th>Responsabilidade</th><th>Integrado?</th></tr></thead>
+                <tbody>
+                  <tr><td><code>modulo</code></td><td>stack</td><td>o que faz</td><td>Sim / Não — por quê</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Aba obrigatória: o que o código revelou e ninguém tinha escrito.
+             Severidade: .sev.alta / .sev.media / .sev.baixa -->
+        <div id="doc-riscos" class="subpanel">
+          <div class="card">
+            <h2><i class="fa-solid fa-triangle-exclamation"></i> Riscos observados no código</h2>
+            <p>Levantamento feito a partir dos arquivos do repositório.</p>
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Sev.</th><th>Onde</th><th>O quê</th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td><span class="sev alta">Alta</span></td>
+                    <td><code>caminho/arquivo</code></td>
+                    <td>O que está errado e o que fazer.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2><i class="fa-solid fa-link-slash"></i> Lacunas de integração</h2>
+            <ul>
+              <li>O que foi prometido e não existe no código.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- painel de detalhes: preenchido por js/main.js, não editar -->
+    <aside id="detail" class="detail" role="complementary" aria-labelledby="detailTitle" hidden>
+      <header class="detail-head">
+        <div class="d-ico" id="detailIcon"></div>
+        <div class="d-htxt">
+          <span class="d-kind" id="detailKind"></span>
+          <h3 id="detailTitle">Detalhes</h3>
+          <span class="d-sub" id="detailSub"></span>
+        </div>
+        <button type="button" class="detail-close" id="detailClose" aria-label="Fechar">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </header>
+      <div class="detail-body" id="detailBody"></div>
+    </aside>
+  </div>
+
+  <button type="button" id="detailBackdrop" aria-label="Fechar detalhes" hidden></button>
+
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
