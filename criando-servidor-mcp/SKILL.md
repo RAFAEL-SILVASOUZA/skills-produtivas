@@ -1,6 +1,6 @@
 ---
 name: criando-servidor-mcp
-description: Use when the user asks to create, scaffold or publish an MCP server (Model Context Protocol): "criar um servidor MCP", "servidor MCP do zero", "expor tools via MCP", choosing between stdio and Streamable HTTP (httpstream), defining which tools/resources/prompts to expose, or adding security (OAuth 2.1, bearer token) to an MCP server. Also for connecting the server to Claude Desktop/Inspector or debugging "server not showing up".
+description: 'Use when the user asks to create, scaffold or publish an MCP server (Model Context Protocol): "criar um servidor MCP", "servidor MCP do zero", "expor tools via MCP", choosing between stdio and Streamable HTTP (httpstream), defining which tools/resources/prompts to expose, or adding security (OAuth 2.1, bearer token) to an MCP server. Also for connecting the server to Claude Desktop/Inspector or debugging "server not showing up".'
 ---
 
 # Criando um servidor MCP
