@@ -1,13 +1,13 @@
 ---
 name: criando-servidor-mcp
-description: 'Use when the user asks to create, scaffold or publish an MCP server (Model Context Protocol): "criar um servidor MCP", "servidor MCP do zero", "expor tools via MCP", choosing between stdio and Streamable HTTP (httpstream), defining which tools/resources/prompts to expose, or adding security (OAuth 2.1, bearer token) to an MCP server. Also for connecting the server to Claude Desktop/Inspector or debugging "server not showing up".'
+description: 'Use when the user asks to create, scaffold or publish an MCP server (Model Context Protocol): "criar um servidor MCP", "expor tools via MCP", choosing between stdio and Streamable HTTP (httpstream), defining which tools/resources/prompts to expose, adding security (OAuth 2.1, bearer token), or publishing the stdio server to npm ("publicar no npm", "npx nao funciona"). Also for Claude Desktop/Inspector setup or "server not showing up".'
 ---
 
 # Criando um servidor MCP
 
 ## Visão geral
 
-Fluxo: **entrevista → scaffold → implementação → verificação → entrega**. Nunca gere código antes de fechar as 5 decisões da Fase 1.
+Fluxo: **entrevista → scaffold → implementação → verificação → publicação (se npm) → entrega**. Nunca gere código antes de fechar as 6 decisões da Fase 1.
 
 Dois princípios inegociáveis:
 1. **Em servidor stdio, nada é escrito em stdout.** stdout carrega JSON-RPC; `print()`, `console.log`, `System.out`, `fmt.Println` quebram o servidor. Logue em stderr.
@@ -15,7 +15,7 @@ Dois princípios inegociáveis:
 
 ## Fase 1: entrevista (obrigatória)
 
-Pergunte com `ask_user`, uma pergunta por chamada, no máximo ~5. Pule o que o usuário já disse e confirme o resumo antes de escrever código.
+Pergunte com `ask_user`, uma pergunta por chamada, no máximo ~6. Pule o que o usuário já disse e confirme o resumo antes de escrever código.
 
 | # | Pergunta | Opções | Por que importa |
 |---|----------|--------|-----------------|
@@ -24,6 +24,7 @@ Pergunte com `ask_user`, uma pergunta por chamada, no máximo ~5. Pule o que o u
 | 3 | Segurança | aberto / bearer token estático (uso interno) / OAuth 2.1 completo (spec) | só faz sentido se HTTP; se stdio, explique e pergunte só se houver HTTP também |
 | 4 | O que o servidor expõe | tools, resources (diretos e templates), prompts | tools = ações (model-controlled); resources = contexto read-only (application-driven); prompts = templates (user-controlled) |
 | 5 | Onde criar | pasta, nome do projeto, gerenciador de pacotes | evita sobrescrever projeto existente |
+| 6 | Distribuição | local só / publicar no npm (stdio JS) / outro registry | define `bin`, shebang, `files` e a Fase 6 |
 
 Para **cada tool** esperada, registre em uma tabela antes de codar: nome (`snake_case`), o que faz em uma frase, parâmetros (nome, tipo, obrigatório, descrição), efeito colateral (lê ou escreve), e dependências externas (API, banco, arquivo, credencial). Se o usuário for vago ("umas tools de clima"), proponha um conjunto concreto e confirme. Não invente parâmetros que o usuário não validou.
 
@@ -101,13 +102,57 @@ Execute, não presuma:
 
 Relate o que rodou e o que falhou. Nunca afirme que o servidor funciona sem saída de comando que comprove.
 
-## Fase 6: entrega
+## Fase 6: publicar no npm (stdio em TypeScript/JavaScript)
+
+Publicar no npm é o padrão de distribuição de servidor stdio: o host roda `npx -y <pacote>` e o npm baixa e executa o binário. Ofereça quando o usuário quer compartilhar, instalar em outra máquina ou cadastrar no registry oficial de MCP. Pergunte antes (`ask_user`): publicar agora ou deixar local.
+
+**Publicar é quase irreversível.** Depois de publicado, um mesmo número de versão não pode ser reescrito, e `npm unpublish` é bloqueado para pacotes com downloads ou com mais de 72h (o caminho vira `npm deprecate`). Nunca rode `npm publish` sem confirmação explícita do usuário, e nunca publique sem o `npm pack --dry-run` abaixo.
+
+Passos, nesta ordem:
+
+1. **Nome e escopo.** Pacote sem escopo precisa de nome livre (`npm view <nome> version` retorna `404` se estiver livre). Nome com escopo (`@usuario/mcp-clima`) exige conta ou organização no npm; escopo privado em plano gratuito falha com erro de pricing, então declare `"publishConfig": { "access": "public" }`.
+2. **package.json completo.** Estes campos são obrigatórios para o servidor funcionar via `npx`:
+```json
+{
+  "name": "mcp-clima",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": { "mcp-clima": "./build/index.js" },
+  "files": ["build"],
+  "engines": { "node": ">=20" },
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/<user>/<repo>.git" },
+  "publishConfig": { "access": "public" },
+  "scripts": { "build": "tsc && chmod 755 build/index.js" }
+}
+```
+   `files: ["build"]` é o que entra no pacote; sem ele, `node_modules` e fontes vão junto. `bin` é o que o `npx` executa.
+3. **Shebang.** A primeira linha do arquivo de entrada (`src/index.ts` compilado em `build/index.js`) deve ser `#!/usr/bin/env node`. Sem ela, o `npx` falha com erro de sintaxe ou "não é executável". Em TypeScript, o shebang vai no topo do `.ts` e o `tsc` o preserva.
+4. **Build + inspeção do tarball.** `npm run build` e depois `npm pack --dry-run`. Confira que a lista contém `build/index.js` e que o tamanho é razoável. Se o `bin` apontar para arquivo ausente, o pacote publicado quebra no cliente.
+5. **Autenticação.** `npm whoami`; se falhar, `npm login`. Contas com 2FA pedem OTP: `npm publish --otp=<6 dígitos>`. Não peça a senha do usuário; deixe que ele rode `npm login` na máquina dele.
+6. **Publicar.** `npm publish`. Depois confirme de fora: `npm view <pacote> version bin` deve mostrar a versão e o binário.
+7. **Verificação final com o pacote publicado** (não com o código local):
+```
+npx -y <pacote>            # deve subir e aguardar em stdio
+npx @modelcontextprotocol/inspector --cli npx -y <pacote> --protocol-era modern --method tools/list
+```
+8. **Versões seguintes.** `npm version patch|minor|major` (cria commit e tag) e `npm publish`. Nunca edite o campo `version` e publique por cima de uma versão existente.
+
+Se o stack não for JS, o npm não é o caminho: Python publica no PyPI (`uv build` + `twine upload` / `uv publish`) e o host usa `uvx <pacote>`; Go e Rust publicam binários, e o padrão npm para eles é um pacote que baixa o binário na instalação. Diga isso em vez de forçar npm.
+
+Depois de publicado, o próximo passo natural é o registry oficial de MCP (`registry.modelcontextprotocol.io`), que exige o pacote no npm como fonte.
+
+## Fase 7: entrega
 
 - Snippet de config do host (`mcpServers`), com **caminho absoluto** e barras duplas em Windows:
 ```json
 { "mcpServers": { "<nome>": { "command": "uv", "args": ["--directory", "C:\\path\\to\\proj", "run", "server.py"] } } }
 ```
-- README: como rodar, variáveis de ambiente, tabela de tools, como testar com Inspector, limitações.
+- Se foi publicado no npm, entregue a variante portátil (funciona em qualquer máquina, sem caminho local):
+```json
+{ "mcpServers": { "<nome>": { "command": "npx", "args": ["-y", "<pacote>"] } } }
+```
+- README: como rodar, variáveis de ambiente, tabela de tools, como testar com Inspector, limitações. Se publicado, inclua o comando de instalação e o badge/linha de versão.
 - Checklist de segurança quando HTTP (audience, escopos, HTTPS, rotação de token).
 
 ## Erros comuns
@@ -123,3 +168,8 @@ Relate o que rodou e o que falhou. Nunca afirme que o servidor funciona sem saí
 | OAuth em stdio | spec diz que stdio NÃO segue o fluxo OAuth; use env vars |
 | Tool com parâmetro inventado | schema errado, chamadas falham; confirme com o usuário |
 | Credencial no código | mova para env + `.env.example` sem valor real |
+| `bin` apontando para arquivo fora de `files` | pacote publicado não tem o binário; `npx` falha no cliente |
+| Shebang ausente no entry point | `npx <pacote>` quebra; primeira linha deve ser `#!/usr/bin/env node` |
+| Escopo sem `publishConfig.access: "public"` | `npm publish` recusa com erro de pricing |
+| Republicar a mesma versão | npm recusa; bump com `npm version` antes |
+| `npm publish` sem `npm pack --dry-run` | publica lixo ou pacote quebrado, e desfazer é limitado (72h, depois só `deprecate`) |
