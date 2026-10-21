@@ -152,7 +152,29 @@ Depois de publicado, o próximo passo natural é o registry oficial de MCP (`reg
 ```json
 { "mcpServers": { "<nome>": { "command": "npx", "args": ["-y", "<pacote>"] } } }
 ```
-- README: como rodar, variáveis de ambiente, tabela de tools, como testar com Inspector, limitações. Se publicado, inclua o comando de instalação e o badge/linha de versão.
+- **Comando `claude mcp add` (Claude Code).** Todo servidor criado deve sair com o exemplo de registro no Claude Code, e esse exemplo vai **também no README**, em uma seção "Instalação no Claude Code". Sintaxe: `claude mcp add <nome> [--scope <user|project|local>] [--env KEY=VALUE ...] -- <comando> [args...]`. O `--` separa as flags do comando do servidor; tudo depois dele é o processo stdio.
+  - stdio local TypeScript sem build (tsx):
+    ```bash
+    claude mcp add mcp-clima -- npx tsx /caminho/absoluto/src/index.ts
+    ```
+  - stdio local com env vars:
+    ```bash
+    claude mcp add mcp-clima --env API_TOKEN=xxx -- npx tsx /caminho/absoluto/src/index.ts
+    ```
+  - stdio publicado no npm:
+    ```bash
+    claude mcp add mcp-clima -- npx -y <pacote>
+    ```
+  - Python (uv):
+    ```bash
+    claude mcp add mcp-clima -- uv --directory /caminho/absoluto/proj run server.py
+    ```
+  - Streamable HTTP:
+    ```bash
+    claude mcp add --transport http <nome> https://exemplo.com/mcp
+    ```
+  Escopos: `local` (default, só esta máquina e projeto), `project` (commitado em `.mcp.json`, compartilhado com o time), `user` (todos os projetos do usuário). Verifique depois com `claude mcp list` e `claude mcp get <nome>`. Em Windows use caminho absoluto com barras duplas nos args.
+- README: como rodar, variáveis de ambiente, tabela de tools, como testar com Inspector, seção de instalação no Claude Code (`claude mcp add ...`), limitações. Se publicado, inclua o comando de instalação e o badge/linha de versão.
 - Checklist de segurança quando HTTP (audience, escopos, HTTPS, rotação de token).
 
 ## Erros comuns
@@ -173,3 +195,4 @@ Depois de publicado, o próximo passo natural é o registry oficial de MCP (`reg
 | Escopo sem `publishConfig.access: "public"` | `npm publish` recusa com erro de pricing |
 | Republicar a mesma versão | npm recusa; bump com `npm version` antes |
 | `npm publish` sem `npm pack --dry-run` | publica lixo ou pacote quebrado, e desfazer é limitado (72h, depois só `deprecate`) |
+| Omitir `claude mcp add` na entrega e no README | usuário não sabe registrar o servidor no Claude Code; sempre inclua o exemplo com `--` antes do comando do servidor |
